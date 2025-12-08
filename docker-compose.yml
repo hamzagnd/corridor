@@ -1,0 +1,6 @@
+services:
+  corridor:
+    build: .
+    ports:
+      - "6743:80"
+    restart: unless-stopped
