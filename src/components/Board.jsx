@@ -7,28 +7,33 @@ const CELL_SIZE = 50;
 const GAP_SIZE = 8;
 const PADDING = 20;
 
-export default function Board() {
-    const { players, walls, validMoves, movePlayer, placeWall, isValidWallPlacement, isGameOver } = useGame();
+export default function Board({ isMultiplayer }) {
+    const { players, walls, validMoves, movePlayer, placeWall, isValidWallPlacement, isGameOver, isMyTurn } = useGame();
     const [hoverWall, setHoverWall] = useState(null);
+
+    // Multiplayer modunda sadece kendi sıramda oynayabilirim
+    const canPlay = isMultiplayer ? isMyTurn : true;
 
     const handleCellClick = (x, y) => {
         if (isGameOver) return;
+        if (!canPlay) return;
         movePlayer(x, y);
     };
 
     const handleWallClick = (x, y, type) => {
         if (isGameOver) return;
+        if (!canPlay) return;
         placeWall(x, y, type);
     };
 
-    const isValidMove = (x, y) => validMoves.some(m => m.x === x && m.y === y);
+    const isValidMove = (x, y) => canPlay && validMoves.some(m => m.x === x && m.y === y);
 
     // Calculate board total size
     const boardSize = BOARD_SIZE * CELL_SIZE + (BOARD_SIZE - 1) * GAP_SIZE + PADDING * 2;
 
     return (
         <div
-            className="board"
+            className={`board ${!canPlay && isMultiplayer ? 'waiting' : ''}`}
             style={{ width: boardSize, height: boardSize }}
         >
             {/* Render Cells */}
@@ -83,7 +88,7 @@ export default function Board() {
             {Array.from({ length: (BOARD_SIZE - 1) * (BOARD_SIZE - 1) }).map((_, i) => {
                 const x = i % (BOARD_SIZE - 1);
                 const y = Math.floor(i / (BOARD_SIZE - 1));
-                const isValid = isValidWallPlacement(x, y, 'h');
+                const isValid = canPlay && isValidWallPlacement(x, y, 'h');
                 const isHovered = hoverWall?.x === x && hoverWall?.y === y && hoverWall?.type === 'h';
 
                 return (
@@ -97,7 +102,7 @@ export default function Board() {
                             height: GAP_SIZE
                         }}
                         onClick={() => handleWallClick(x, y, 'h')}
-                        onMouseEnter={() => setHoverWall({ x, y, type: 'h' })}
+                        onMouseEnter={() => canPlay && setHoverWall({ x, y, type: 'h' })}
                         onMouseLeave={() => setHoverWall(null)}
                     >
                         {isHovered && (
@@ -111,7 +116,7 @@ export default function Board() {
             {Array.from({ length: (BOARD_SIZE - 1) * (BOARD_SIZE - 1) }).map((_, i) => {
                 const x = i % (BOARD_SIZE - 1);
                 const y = Math.floor(i / (BOARD_SIZE - 1));
-                const isValid = isValidWallPlacement(x, y, 'v');
+                const isValid = canPlay && isValidWallPlacement(x, y, 'v');
                 const isHovered = hoverWall?.x === x && hoverWall?.y === y && hoverWall?.type === 'v';
 
                 return (
@@ -125,7 +130,7 @@ export default function Board() {
                             height: CELL_SIZE * 2 + GAP_SIZE
                         }}
                         onClick={() => handleWallClick(x, y, 'v')}
-                        onMouseEnter={() => setHoverWall({ x, y, type: 'v' })}
+                        onMouseEnter={() => canPlay && setHoverWall({ x, y, type: 'v' })}
                         onMouseLeave={() => setHoverWall(null)}
                     >
                         {isHovered && (
@@ -134,6 +139,13 @@ export default function Board() {
                     </div>
                 );
             })}
+
+            {/* Waiting overlay */}
+            {!canPlay && isMultiplayer && !isGameOver && (
+                <div className="waiting-overlay">
+                    Rakip oynuyor...
+                </div>
+            )}
         </div>
     );
 }
